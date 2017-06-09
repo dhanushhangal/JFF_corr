@@ -1,0 +1,357 @@
+#include <iostream>
+#include "TFile.h"
+#include "TRandom.h"
+#include "TTree.h"
+#include "TH1F.h"
+#include "TH1D.h"
+#include "TProfile.h"
+#include "TGraph.h"
+#include "TGraphErrors.h"
+#include "TProfile2D.h"
+#include <TF1.h>
+#include "assert.h"
+#include <fstream>
+#include "TMath.h"
+#include "TH2F.h"
+#include "TH2D.h"
+#include "TMath.h"
+#include <TNtuple.h>
+#include "TChain.h"
+#include <TString.h>
+#include <TLatex.h>
+#include <TCut.h>
+#include <vector>
+#include "TCanvas.h"
+#include "mixing_tree_data.h"
+#include "nCScorr.h"
+
+const int nCBins = 8;
+const int nptBins = 55;
+//const int nptBins = 10;
+
+using namespace std;
+
+const bool ispp = false;
+const bool isdata = true;
+
+TString dataset_type_file_names[4] = {"PbPb_Data_skim.txt","pp_Data_skim.txt","PbPb_MC_skim.txt","pp_MC_skim.txt"};
+
+int mypbin, mycbin, myptbin, myrefptbin;
+
+char saythis[500];
+
+TString cent[nCBins] = {"0","1","2","3","4","5","6","7"};
+TString pt[56] = {"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55"};
+
+int jt_nbins = 55;
+Double_t jt_bin_bounds[56] = {50., 60., 70., 80., 90., 100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280.,290.,300.,310.,320.,330.,340.,350.,360.,370.,380.,390.,400.,410.,420.,430.,440.,450.,460.,470.,480.,490.,500.,510.,520.,530.,540.,550.,560.,570.,580.,590.,600.};
+
+float CBins[nCBins+1] = {0, 20, 60, 100, 120, 140, 160, 180, 200};
+
+double calo_jtpt, calo_corrpt, calo_refpt, calo_jteta, calo_jtphi, closure_nocorr, closure_corr, pt_size, hiBin, pthat_weight, refparton_flavor;
+
+//Auxillary functions defined below
+void ReadFileList(std::vector<TString> &my_file_names, TString file_of_names, bool debug=false);
+
+void test_corr(){
+
+  nCScorr *corrpt = new nCScorr(ispp);
+
+//// defining histos and profiles
+
+  TH1D *h_reco_full[nCBins];
+  TH1D *h_reco_corr[nCBins];
+  TH1D *h_gen_full[nCBins];
+  TH2F *h_ncs_pt[nCBins];
+  TH2F *h_npf_pt[nCBins];  
+
+  TH2F *h_jt_closure_ref_nocorr[nCBins];
+  TH2F *h_jt_closure_ref_corr[nCBins];
+  TH2F *h_jt_closure_reco_nocorr[nCBins];
+  TH2F *h_jt_closure_reco_corr[nCBins];
+  TH2F *h_jt_closure_q_nocorr[nCBins];
+  TH2F *h_jt_closure_q_corr[nCBins];
+  TH2F *h_jt_closure_g_nocorr[nCBins];
+  TH2F *h_jt_closure_g_corr[nCBins];
+
+  for (int ibin=0;ibin<nCBins;ibin++){
+
+    //closure histo vs refpt
+
+    sprintf(saythis,"h_jt_closure_ref_nocorr_cent%d",ibin);
+    h_jt_closure_ref_nocorr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);
+    h_jt_closure_ref_nocorr[ibin]->Sumw2();
+    sprintf(saythis,"h_jt_closure_ref_corr_cent%d",ibin);
+    h_jt_closure_ref_corr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);
+    h_jt_closure_ref_corr[ibin]->Sumw2();
+
+    //closure histo vs recopt
+
+    sprintf(saythis,"h_jt_closure_reco_nocorr_cent%d",ibin);
+    h_jt_closure_reco_nocorr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);
+    h_jt_closure_reco_nocorr[ibin]->Sumw2();
+    sprintf(saythis,"h_jt_closure_reco_corr_cent%d",ibin);
+    h_jt_closure_reco_corr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);
+    h_jt_closure_reco_corr[ibin]->Sumw2();
+
+    //closure histo q vs refpt
+
+    sprintf(saythis,"h_jt_closure_q_nocorr_cent%d",ibin);
+    h_jt_closure_q_nocorr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);  
+    h_jt_closure_q_nocorr[ibin]->Sumw2();
+    sprintf(saythis,"h_jt_closure_q_corr_cent%d",ibin);
+    h_jt_closure_q_corr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);  
+    h_jt_closure_q_corr[ibin]->Sumw2();
+
+    //closure histo g vs refpt
+
+    sprintf(saythis,"h_jt_closure_g_nocorr_cent%d",ibin);
+    h_jt_closure_g_nocorr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);
+    h_jt_closure_g_nocorr[ibin]->Sumw2();
+    sprintf(saythis,"h_jt_closure_g_corr_cent%d",ibin);
+    h_jt_closure_g_corr[ibin] = new TH2F(saythis, "", jt_nbins-1,jt_bin_bounds,200,0.,2.);
+    h_jt_closure_g_corr[ibin]->Sumw2();
+
+    sprintf(saythis,"h_gen_full_cent%d",ibin);
+    h_gen_full[ibin] = new TH1D(saythis,"",450,50.,500.);
+    h_gen_full[ibin]->Sumw2();
+  
+    sprintf(saythis,"h_reco_full_cent%d",ibin);
+    h_reco_full[ibin] = new TH1D(saythis,"",450,50.,500.);
+    h_reco_full[ibin]->Sumw2();
+
+    sprintf(saythis,"h_reco_corr_cent%d",ibin);
+    h_reco_corr[ibin] = new TH1D(saythis,"",450,50.,500.);
+    h_reco_corr[ibin]->Sumw2();
+
+    //for (int ibin2=0;ibin2<nptBins;ibin2++){
+      sprintf(saythis,"h_ncs_pt_cent%d",ibin);
+      h_ncs_pt[ibin] = new TH2F(saythis,"",500,0.,500.,40,0.,40.);
+      h_ncs_pt[ibin]->Sumw2();
+
+      sprintf(saythis,"h_npf_pt_cent%d",ibin);
+      h_npf_pt[ibin] = new TH2F(saythis,"",500,0.,500.,40,0.,40.);
+      h_npf_pt[ibin]->Sumw2();
+    //}
+  }
+
+  int total_n_jets = 0;
+
+  ///// CUTS ///////
+  const double etacut = 1.6;
+  const double pTmincut = 50.;
+  const double pTmaxcut = 600.;
+  const double refpTmincut = 0.;
+  
+  ///////////////// centrality reweighting ///////////////////////
+
+  TFile *cen = TFile::Open("VertexHiNcollFits.root");
+
+  TF1 *f_cen = (TF1*)cen->Get("xfit_hi")->Clone("f_cen"); 
+
+  /////open files //////
+  std::vector<TString> file_names;   file_names.clear();
+
+  ReadFileList(file_names, dataset_type_file_names[0], true);
+
+  cout<<"got file"<<endl;
+
+  for(int fi = 0; fi < (int) file_names.size(); fi++) {
+  //for(int fi = 0; fi < 10; fi++) {
+    
+    TFile *my_file = TFile::Open(file_names.at(fi));
+    //if(fi%5==0) std::cout << "Current file: " << ", file_name: " << file_names.at(fi) << ", number " << fi << " of " << file_names.size() << std::endl;
+    if(my_file->IsZombie()) {
+      std::cout << "Is zombie" << std::endl;
+    }
+
+/*
+  TFile *my_file;
+
+  if(ispp) my_file = TFile::Open("unzippedSkim_5TeV_ppMC.root"); 
+  else my_file = TFile::Open("unzippedSkim_PbPbMC_full.root");
+*/
+
+  TTree *inp_tree = (TTree*)my_file->Get("unzipMixTree");
+  mixing_tree_data *my_primary = new mixing_tree_data(inp_tree);
+  std::cout << "Successfully retrieved tree from input file!" << std::endl;
+  Long64_t n_jets = my_primary->fChain->GetEntriesFast();
+  total_n_jets += n_jets;
+  //cout<<total_n_jets<<endl;
+
+  //// Loop over all reco jets ////
+
+  for (int jet = 0; jet < n_jets; jet++){ 
+  //for (int jet = 0; jet < 200000; jet++){
+
+    if (jet%1000000==0) cout<<jet<<endl;
+
+    my_primary->fChain->GetEntry(jet);
+
+    calo_jteta = my_primary->jteta;  
+    if(fabs(calo_jteta) >= etacut) continue ;  
+
+    calo_jtpt = my_primary->jtpt;
+    if (calo_jtpt <= pTmincut || calo_jtpt >= pTmaxcut) continue;
+
+    int nCS_2 = my_primary->nCScandPt2_id145;
+    int nPF = my_primary->nPFcand;
+    //int nCS_2 = my_primary->nCScand;  
+    //cout<<nCS_2<<endl;  
+    
+    //// centrality bin and weight 
+
+    hiBin = my_primary->hiBin;
+    if(ispp) hiBin = 1;
+
+    if (hiBin == 0 ) {continue; }
+                 
+    double weight_cen = f_cen->Eval(hiBin);
+
+    if(ispp) weight_cen = 1.;
+
+    if(isdata) weight_cen = 1.;
+
+    for (int cbin = 0; cbin < nCBins; cbin++){ 
+
+      if (hiBin > CBins[cbin] && hiBin <= CBins[cbin+1]){
+
+        mycbin = cbin; 
+      }
+    }
+
+    if(ispp) mycbin = 0;
+
+    ///// pthat weight
+
+    pthat_weight = my_primary->weight;
+
+    if(isdata) pthat_weight = 1.;
+
+    ///// pt bin
+
+    for (int ptbin = 0; ptbin < nptBins; ptbin++){
+
+      if (calo_jtpt > jt_bin_bounds[ptbin] && calo_jtpt <= jt_bin_bounds[ptbin+1]){
+        
+        myptbin = ptbin; 
+      }
+    }
+
+    if(!isdata){
+      for (int ptbin = 0; ptbin < nptBins; ptbin++){
+
+        if (calo_refpt > jt_bin_bounds[ptbin] && calo_refpt <= jt_bin_bounds[ptbin+1]){
+        
+          myrefptbin = ptbin; 
+        }
+      }
+    }
+    
+    if(!isdata){
+    
+    /////// closure ///////// 
+
+      closure_nocorr = calo_jtpt/calo_refpt;
+      closure_corr = calo_corrpt/calo_refpt;
+    }
+
+    calo_corrpt = corrpt->getCorrection(ispp, nCS_2, hiBin, calo_jtpt, calo_jteta);
+
+    /////filling histos
+
+    h_ncs_pt[mycbin]->Fill(calo_jtpt,nCS_2,pthat_weight*weight_cen);
+    h_npf_pt[mycbin]->Fill(calo_jtpt,nPF,pthat_weight*weight_cen);
+
+    if(!isdata){
+      h_jt_closure_ref_nocorr[mycbin]->Fill(calo_refpt,closure_nocorr,pthat_weight*weight_cen);
+      h_jt_closure_ref_corr[mycbin]->Fill(calo_refpt,closure_corr,pthat_weight*weight_cen);
+
+      h_jt_closure_reco_nocorr[mycbin]->Fill(calo_jtpt,closure_nocorr,pthat_weight*weight_cen);
+      h_jt_closure_reco_corr[mycbin]->Fill(calo_jtpt,closure_corr,pthat_weight*weight_cen);
+    
+      h_gen_full[mycbin]->Fill(calo_refpt,pthat_weight*weight_cen);
+    
+      if(refparton_flavor == -999) continue;
+               
+      if (fabs(refparton_flavor) == 21){
+        h_jt_closure_g_nocorr[mycbin]->Fill(calo_refpt,closure_nocorr,pthat_weight*weight_cen);
+        h_jt_closure_g_corr[mycbin]->Fill(calo_refpt,closure_corr,pthat_weight*weight_cen);
+      }   
+      else {
+        h_jt_closure_q_nocorr[mycbin]->Fill(calo_refpt,closure_nocorr,pthat_weight*weight_cen);
+        h_jt_closure_q_corr[mycbin]->Fill(calo_refpt,closure_corr,pthat_weight*weight_cen);
+      }
+    }
+    
+    h_reco_full[mycbin]->Fill(calo_jtpt,pthat_weight*weight_cen);
+
+    h_reco_corr[mycbin]->Fill(calo_corrpt,pthat_weight*weight_cen);
+
+    }//end of jet loop
+  }//end of file loop
+
+  TFile *closure_histos;
+
+  if(isdata){
+    if(ispp) closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/pptest_histos_data_Jun9.root", "RECREATE");
+    else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/test_histos_data_Jun9_per.root", "RECREATE");
+  }
+  else{
+    if(ispp) closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/pptest_histos_MC_Jun9.root", "RECREATE");
+    else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/test_histos_MC_Jun9.root", "RECREATE");
+  }  
+
+  closure_histos->cd();
+
+  for(int ibin=0;ibin<nCBins;ibin++){
+ 
+  if(!isdata){
+    h_jt_closure_ref_nocorr[ibin]->Write();
+    h_jt_closure_ref_corr[ibin]->Write();
+
+    h_jt_closure_reco_nocorr[ibin]->Write();
+    h_jt_closure_reco_corr[ibin]->Write();
+  
+    h_jt_closure_q_nocorr[ibin]->Write();
+    h_jt_closure_q_corr[ibin]->Write();
+
+    h_jt_closure_g_nocorr[ibin]->Write();
+    h_jt_closure_g_corr[ibin]->Write();
+    h_gen_full[ibin]->Write();
+  }
+
+    h_reco_full[ibin]->Write();
+    h_reco_corr[ibin]->Write();
+
+    //for (int ibin2=0;ibin2<nptBins;ibin2++){
+      h_ncs_pt[ibin]->Write();
+      h_npf_pt[ibin]->Write();
+    //}
+  }
+
+  closure_histos->Close();
+
+}
+
+void ReadFileList(std::vector<TString> &my_file_names, TString file_of_names, bool debug)
+{
+  ifstream file_stream(file_of_names);
+  std::string line;
+  my_file_names.clear();
+  if( debug ) std::cout << "Open file " << file_of_names << " to extract files to run over" << std::endl;
+  if( file_stream.is_open() ) {
+    if( debug ) std::cout << "Opened " << file_of_names << " for reading" << std::endl;
+    int line_num = 0;
+    while( !file_stream.eof() ) {
+      getline(file_stream, line);
+      if( debug ) std::cout << line_num << ": " << line << std::endl;
+      TString tstring_line(line);
+      if( tstring_line.CompareTo("", TString::kExact) != 0 ) my_file_names.push_back(tstring_line);
+      line_num++;
+    }
+  } else {
+    std::cout << "Error, could not open " << file_of_names << " for reading" << std::endl;
+    assert(0);
+  }
+}
