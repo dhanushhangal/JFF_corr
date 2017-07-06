@@ -22,7 +22,7 @@
 #include <TCut.h>
 #include <vector>
 #include "TCanvas.h"
-#include "mixing_tree_new.h"
+#include "mixing_tree_cymbal.h"
 #include "nCScorr.h"
 
 const int nCBins = 4;
@@ -35,7 +35,8 @@ using namespace std;
 const bool derive_jff = false;
 const bool derive_residual = false;
 const bool is_pp = false;
-const bool is_data = true;
+const bool id_145 = true;
+const bool id_1 = false;
 
 int mypbin, mycbin, myptbin, myrefptbin;
 
@@ -195,7 +196,7 @@ void jff_corr(){
     h_gen_full[ibin]->Sumw2();
 
     sprintf(saythis,"h_reco_ratio_cent%d",ibin);
-    h_reco_ratio[ibin] = new TH1D(saythis,"",55,50.,600.);
+    h_reco_ratio[ibin] = new TH1D(saythis,"",40,100.,500.);
     h_reco_ratio[ibin]->Sumw2();
 
     for (int ibin2=0;ibin2<nptBins;ibin2++){
@@ -289,11 +290,11 @@ void jff_corr(){
   TFile *my_file;
 
   if(is_pp) my_file = TFile::Open("unzippedSkim_5TeV_ppMC.root"); 
-  //else my_file = TFile::Open("unzippedSkim_PbPbMC_full.root");
-  else my_file = TFile::Open("HydJet145_1.root");
+  //else my_file = TFile::Open("/data/jetskims/HydJet145_1.root");
+  else my_file = TFile::Open("/data/jetskims/PbPbMC_HydjetPythia_CymbalTune_unzipSkim.root");
   
   TTree *inp_tree = (TTree*)my_file->Get("unzipMixTree");
-  mixing_tree_new *my_primary = new mixing_tree_new(inp_tree);
+  mixing_tree_cymbal *my_primary = new mixing_tree_cymbal(inp_tree);
   std::cout << "Successfully retrieved tree from input file!" << std::endl;
   Long64_t n_jets = my_primary->fChain->GetEntriesFast();
   cout<<n_jets<<endl;
@@ -312,19 +313,23 @@ void jff_corr(){
 
     calo_jtpt = my_primary->jtpt;
     if (calo_jtpt <= pTmincut || calo_jtpt >= pTmaxcut) continue;
+
+    //corr_calo_jtpt_2 = my_primary->corrpt;
             
     calo_refpt = my_primary->refpt;
     if (calo_refpt <= refpTmincut/* || calo_refpt >= refpTmaxcut*/) continue;
 
     int refparton_flavor = my_primary->refparton_flavor;
 
-    int nCS_2 = my_primary->nCScand;    
-    
+    int nCS_2 = my_primary->nCScandPt2_id145;    
+/*    
     //// vz and weight
 
     vz = my_primary->vz;
     if (fabs(vz) > 15.) continue;
     double weight_vz = f_vz->Eval(vz);
+*/
+    double weight_vz =1.;
 
     //// centrality bin and weight 
 
@@ -444,8 +449,9 @@ void jff_corr(){
       //h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q R M");
       
       // linear fits to nCS closures
+      if(id_145){
 
-      if(ibin3<5) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",2.,18.);
+      if(ibin3<5) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",0.,18.);
       else if(ibin3<10) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",2.,25.);
       else if(ibin3<13) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",2.,30.);
       else if(ibin3<20) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",2.,35.);
@@ -459,6 +465,19 @@ void jff_corr(){
       else if((ibin3==40) && ((ibin==0)||(ibin==1))) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",5.,30.);
       else if(ibin3<45) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",5.,35.);
       else h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",8.,25.);
+      }
+
+      else if(id_1){
+      if(ibin3<5) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",0.,14.);
+      else if(ibin3<9) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",1.,15.);
+      else if(ibin3<15) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",1.,19.);
+      else if(ibin3<25) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",1.,22.);
+      else if(ibin3<30) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",2.,23.);
+      else if(ibin3<39) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",2.,21.);
+      else if(ibin3<44) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",2.,19.);
+      else if(ibin3<50) h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",3.,17.);
+      else h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q M","",3.,16.);   
+      }  
 
       par0_2[ibin3] = f_ncs_2[ibin][ibin3]->GetParameter(0);
       par1_2[ibin3] = f_ncs_2[ibin][ibin3]->GetParameter(1);
@@ -489,9 +508,11 @@ void jff_corr(){
       f2_par0[ibin]->SetParameter(2,-96.3265);
       
       gr_p1_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par1_2,x_mean_err,par1_err_2);
+      gr_p1_param_2[ibin]->SetName("gr_p1_param_2_cent0");
       gr_p1_param_2[ibin]->Fit(f2_par1[ibin],"Q M","",80.,470.);
 
       gr_p0_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par0_2,x_mean_err,par0_err_2);
+      gr_p0_param_2[ibin]->SetName("gr_p0_param_2_cent0");
       gr_p0_param_2[ibin]->Fit(f2_par0[ibin],"Q M","",80.,470.);
     }
 
@@ -507,9 +528,11 @@ void jff_corr(){
       f2_par0[ibin]->SetParameter(2,-67.7417);
 
       gr_p1_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par1_2,x_mean_err,par1_err_2);
+      gr_p1_param_2[ibin]->SetName("gr_p1_param_2_cent1");
       gr_p1_param_2[ibin]->Fit(f2_par1[ibin],"Q M","",80.,470.);
 
       gr_p0_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par0_2,x_mean_err,par0_err_2);
+      gr_p0_param_2[ibin]->SetName("gr_p0_param_2_cent1");
       gr_p0_param_2[ibin]->Fit(f2_par0[ibin],"Q M","",80.,470.); 
     }
 
@@ -525,9 +548,11 @@ void jff_corr(){
       f2_par0[ibin]->SetParameter(2,-60.6488);
 
       gr_p1_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par1_2,x_mean_err,par1_err_2);
+      gr_p1_param_2[ibin]->SetName("gr_p1_param_2_cent2");
       gr_p1_param_2[ibin]->Fit(f2_par1[ibin],"Q M","",80.,480.);
 
       gr_p0_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par0_2,x_mean_err,par0_err_2);
+      gr_p0_param_2[ibin]->SetName("gr_p0_param_2_cent2");
       gr_p0_param_2[ibin]->Fit(f2_par0[ibin],"Q M","",80.,480.); 
     }
 
@@ -543,9 +568,11 @@ void jff_corr(){
       f2_par0[ibin]->SetParameter(2,-51.9022);
 
       gr_p1_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par1_2,x_mean_err,par1_err_2);
+      gr_p1_param_2[ibin]->SetName("gr_p1_param_2_cent3");
       gr_p1_param_2[ibin]->Fit(f2_par1[ibin],"Q M","",80.,550.);
 
       gr_p0_param_2[ibin] = new TGraphErrors(nptBins,x_mean,par0_2,x_mean_err,par0_err_2);
+      gr_p0_param_2[ibin]->SetName("gr_p0_param_2_cent3");
       gr_p0_param_2[ibin]->Fit(f2_par0[ibin],"Q M","",80.,550.);
 
     }
@@ -555,30 +582,32 @@ void jff_corr(){
   if(derive_residual){
    
     for(int ibin=0;ibin<nCBins;ibin++){
-     
-      sprintf(saythis,"f_closure_cent%d",ibin);
-      f_closure[ibin] = new TF1(saythis, "pol1", 80., 500.);
-      f_closure[ibin] ->SetParameter(0,1.);
-      f_closure[ibin] ->SetParameter(1,2e-05);
     
       h_jt_closure_ref_ncs2_px[ibin] = h_jt_closure_ref_ncs2[ibin]->ProfileX();
-      h_jt_closure_ref_ncs2_px[ibin]->Fit(f_closure[ibin],"Q M","",80.,500.);
-      
+      //h_jt_closure_ref_ncs2_px[ibin]->Fit(f_closure[ibin],"Q M","",80.,500.);
+      /*
       //flat corrections
       sprintf(saythis,"f_flatcorr_cent%d",ibin);
       f_flatcorr[ibin] = new TF1(saythis, "pol0", 80., 600.);
       f_flatcorr[ibin] ->SetParameter(0,1.);
 
       h_jt_closure_ref_ncs2_px[ibin]->Fit(f_flatcorr[ibin],"Q M","",80.,500.);
-  
+      */  
+      sprintf(saythis,"f_closure_cent%d",ibin);
+      f_closure[ibin] = new TF1(saythis, "pol1", 100., 500.);
+      f_closure[ibin] ->SetParameter(0,1.);
+      f_closure[ibin] ->SetParameter(1,2e-05);
+      
+      h_jt_closure_ref_ncs2_px[ibin]->Fit(f_closure[ibin],"Q M","",100.,500.);
+
     }
-  /*
+  
   
     //// Loop over all reco jets ////
     cout<<"deriving residual corrections"<<endl;
 
     for (int jet = 0; jet < n_jets; jet++){ 
-    //for (int jet = 0; jet < 2000000; jet++){
+    //for (int jet = 0; jet < 200000; jet++){
 
       if (jet%1000000==0) cout<<jet<<endl;
 
@@ -593,8 +622,8 @@ void jff_corr(){
       calo_refpt = my_primary->refpt;
       if (calo_refpt <= refpTmincut) continue;
 
-      int nCS_2 = my_primary->nCScand;
-      
+      int nCS_2 = my_primary->nCScandPt2_id145;
+    
       //// centrality bin and weight 
 
       hiBin = my_primary->hiBin;
@@ -639,14 +668,17 @@ void jff_corr(){
       }
 
       ///after jff correction
-      //corr_calo_jtpt_2 = corrpt->getCorrection(is_pp,nCS_2, hiBin, calo_jtpt, calo_jteta);
+      corr_calo_jtpt_2 = corrpt->getCorrection(is_pp,nCS_2, hiBin, calo_jtpt, calo_jteta);
 
       //////apply pol1 correction
+      //cout<<f_closure[mycbin]->Eval(calo_refpt)<<endl;
       corr_calo_jtpt_pol1 = corr_calo_jtpt_2/(f_closure[mycbin]->Eval(calo_refpt));
-    
+      //cout<<corr_calo_jtpt_pol1<<"   "<<calo_refpt<<endl;
+
       /////// closure ///////// 
 
       closure_gen_pol1 = corr_calo_jtpt_pol1/calo_refpt;
+      //cout<<closure_gen_pol1<<endl;
 
       /////filling histos
 
@@ -660,14 +692,16 @@ void jff_corr(){
       h_jt_closure_reco_pol1_px[i] = h_jt_closure_reco_pol1[i]->ProfileX();
       
       sprintf(saythis,"f_reco_ratio_cent%d",i);
-      f_reco_ratio[i] = new TF1(saythis, "pol1", 50., 600.);
-      f_reco_ratio[i] ->SetParameter(0,0.99);
+      f_reco_ratio[i] = new TF1(saythis, "pol1", 100., 500.);
+      f_reco_ratio[i] ->SetParameter(0,1.);
       f_reco_ratio[i] ->SetParameter(1,2e-05);
       
-      for(int j=0; j<nptBins; j++){
+      for(int j=0; j<40; j++){
+        cout<<"h_jt_closure_reco_px: "<<i<<"  "<<j+1<<"  "<<h_jt_closure_reco_px[i]->GetBinContent(j+1)<<endl;
+        cout<<"h_jt_closure_reco_pol1_px: "<<i<<"  "<<j+1<<"  "<<h_jt_closure_reco_pol1_px[i]->GetBinContent(j+1)<<endl;
         h_reco_ratio[i]->SetBinContent(j+1,(h_jt_closure_reco_px[i]->GetBinContent(j+1))/(h_jt_closure_reco_pol1_px[i]->GetBinContent(j+1)));
         h_reco_ratio[i]->SetBinError(j+1,sqrt((h_jt_closure_reco_px[i]->GetBinContent(j+1))/(h_jt_closure_reco_pol1_px[i]->GetBinContent(j+1)))*sqrt(pow((h_jt_closure_reco_px[i]->GetBinError(j+1))/(h_jt_closure_reco_px[i]->GetBinContent(j+1)),2)+pow((h_jt_closure_reco_pol1_px[i]->GetBinError(j+1))/(h_jt_closure_reco_pol1_px[i]->GetBinContent(j+1)),2)));
-        h_reco_ratio[i]->Fit(f_reco_ratio[i],"Q M","",50.,600.);
+        h_reco_ratio[i]->Fit(f_reco_ratio[i],"Q M","",100.,500.);
 
       }
     }
@@ -772,8 +806,8 @@ void jff_corr(){
 /// writing histos ///
   TFile *closure_histos;
 
-  if(is_pp) closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/ppclosure_histos_Jun7_header_id145.root", "RECREATE");
-  else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/closure_histos_Jun7_header_id145.root", "RECREATE");
+  if(is_pp) closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/ppclosure_histos_Jun7_header.root", "RECREATE");
+  else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul6_header_id145.root", "RECREATE");
   closure_histos->cd();
 
   for(int ibin=0;ibin<nCBins;ibin++){
@@ -810,6 +844,8 @@ void jff_corr(){
       gr_p0_param_2[ibin]->Write();
     }
 
+    h_reco_ratio[ibin]->Write();
+
     for(int ibin3=0;ibin3<nptBins;ibin3++){
       h_ncs_2_nocorr[ibin][ibin3]->Write();
       h_ncs_2_nocorr_q[ibin][ibin3]->Write();
@@ -837,14 +873,14 @@ if(derive_jff && derive_residual){
   TFile *corr_file;
 
   if(is_pp) corr_file = new TFile("/home/dhanush/Documents/JFF_corrections/corr_files_May29/ppcorr_file_Jun8.root", "RECREATE");
-  else corr_file = new TFile("/home/dhanush/Documents/JFF_corrections/corr_files_May29/corr_file_Jun8.root", "RECREATE");
+  else corr_file = new TFile("/home/dhanush/Documents/JFF_corrections/corr_files_Jul5/corr_file_Jul5_cymbal_id145.root", "RECREATE");
   corr_file->cd();
 
   for(int ibin=0;ibin<nCBins;ibin++){
-    f2_par1[ibin]->Write();
-    f2_par0[ibin]->Write();
+    //f2_par1[ibin]->Write();
+    //f2_par0[ibin]->Write();
 
-    //f_reco_ratio[ibin]->Write();
+    f_reco_ratio[ibin]->Write();
     f_flatcorr[ibin]->Write();
   }
   corr_file->Close();
