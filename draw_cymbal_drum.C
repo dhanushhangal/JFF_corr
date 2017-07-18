@@ -35,8 +35,9 @@ Double_t jt_bin_bounds[56] = {50., 60., 70., 80., 90., 100., 110., 120., 130., 1
 
 void draw_cymbal_drum(){
 
-  TFile *closure_histos_cymbal = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul6_header_id145.root");
-  TFile *closure_histos_drum = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jun14_header_id145.root");
+  TFile *closure_histos_cymbal = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul18_cymbal_header_id145.root");
+  //TFile *closure_histos_drum = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jun14_header_id145.root");
+  TFile *closure_histos_drum = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul7_drum_header_id145.root");
 
 // defining histos
 
@@ -142,7 +143,7 @@ void draw_cymbal_drum(){
     h_jt_closure_g_ncs2_cymbal_px[3-i]->SetMarkerStyle(24);
     h_jt_closure_g_ncs2_cymbal_px[3-i]->SetMarkerSize(0.7);
     h_jt_closure_g_ncs2_cymbal_px[3-i]->Draw("e1 same");
-
+/*
     h_jt_closure_ref_ncs2_drum_px[3-i] = h_jt_closure_ref_ncs2_drum[3-i]->ProfileX();
     h_jt_closure_ref_ncs2_drum_px[3-i]->Rebin(2);
     h_jt_closure_ref_ncs2_drum_px[3-i]->SetLineColor(kBlack);
@@ -156,7 +157,7 @@ void draw_cymbal_drum(){
     h_jt_closure_g_ncs2_drum_px[3-i]->Rebin(2);
     h_jt_closure_g_ncs2_drum_px[3-i]->SetLineColor(kRed);
     h_jt_closure_g_ncs2_drum_px[3-i]->Draw("e0 same");
-
+*/
     tl1->Draw("same");
     tl2->Draw("same");
     tl3->Draw("same");

@@ -57,6 +57,13 @@ float CBins[5] = {0, 20, 60, 100, 200};
 
 double calo_jtpt, calo_refpt, calo_jteta, calo_jtphi, closure_nocorr, closure_ncs2, closure_gen_pol1, closure_reco_pol1, hiBin, vz, pthat_weight, corr_factor2, corr_calo_jtpt_2, corr_calo_jtpt_pol1, corr_calo_jtpt_reco_pol1;
 
+//cymbal tune
+double fcent(int hiBin){ 
+  TF1* fcent1= new TF1("fcent1","[0]+[1]*x+[2]*x^2+[3]*x^3+[4]*x^4+[7]*exp([5]+[6]*x)",0,180);  
+  fcent1->SetParameters(4.40810, -7.75301e-02, 4.91953e-04, -1.34961e-06, 1.44407e-09, -160, 1, 3.68078e-15); 
+  return (hiBin < 194) ? fcent1->Eval(hiBin) : 1;
+}
+
 void jff_corr(){
 
   nCScorr *corrpt = new nCScorr(is_pp);
@@ -260,13 +267,19 @@ void jff_corr(){
   
   ///////////////// centrality reweighting ///////////////////////
 
+  //drum tune
   TFile *cen = TFile::Open("VertexHiNcollFits.root");
 
   TF1 *f_cen = (TF1*)cen->Get("xfit_hi")->Clone("f_cen");
 
   ///////////////// vz reweighting ///////////////////////
 
+  //drum tune 
   TF1 *f_vz = (TF1*)cen->Get("xfit_vz")->Clone("f_vz"); 
+
+  //cymbal tune
+  TF1 *fWeight = new TF1("fWeight","gaus(0)/(gaus(3))",-30.,30.);
+  fWeight->SetParameters(0.08,0.44,5.12,0.08,3.25,5.23);
 
   ////recopt correction file
 
@@ -321,7 +334,8 @@ void jff_corr(){
 
     int refparton_flavor = my_primary->refparton_flavor;
 
-    int nCS_2 = my_primary->nCScandPt2_id145;    
+    int nCS_2 = my_primary->nCScandPt2_id145;
+    //int nCS_2 = my_primary->nCScand;    
 /*    
     //// vz and weight
 
@@ -337,8 +351,12 @@ void jff_corr(){
     if(is_pp) hiBin = 1;
 
     if (hiBin == 0 ) {continue; }
-                 
-    double weight_cen = f_cen->Eval(hiBin);
+    
+    //drum tune             
+    //double weight_cen = f_cen->Eval(hiBin);
+    
+    //cymbal tune
+    double weight_cen = fcent(hiBin);
 
     if(is_pp) weight_cen = 1.;
 
@@ -622,7 +640,7 @@ void jff_corr(){
       calo_refpt = my_primary->refpt;
       if (calo_refpt <= refpTmincut) continue;
 
-      int nCS_2 = my_primary->nCScandPt2_id145;
+      int nCS_2 = my_primary->nCScand;
     
       //// centrality bin and weight 
 
@@ -807,7 +825,7 @@ void jff_corr(){
   TFile *closure_histos;
 
   if(is_pp) closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/ppclosure_histos_Jun7_header.root", "RECREATE");
-  else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul6_header_id145.root", "RECREATE");
+  else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul18_cymbal_header_id145.root", "RECREATE");
   closure_histos->cd();
 
   for(int ibin=0;ibin<nCBins;ibin++){
