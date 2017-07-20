@@ -26,7 +26,7 @@
 #include "nCScorr.h"
 
 const int nCBins = 4;
-const int nptBins = 55;
+const int nptBins = 40;
 //const int nptBins = 10;
 const int eta_nbins = 18;
 
@@ -43,11 +43,14 @@ int mypbin, mycbin, myptbin, myrefptbin;
 char saythis[500];
 
 TString cent[4] = {"0","1","2","3"};
-TString pt[56] = {"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55"};
+//TString pt[56] = {"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55"};
+TString pt[42] = {"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40"};
 //TString pt[11] = {"0","1","2","3","4","5","6","7","8","9","10"};
 
-int jt_nbins = 55;
-Double_t jt_bin_bounds[56] = {50., 60., 70., 80., 90., 100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280.,290.,300.,310.,320.,330.,340.,350.,360.,370.,380.,390.,400.,410.,420.,430.,440.,450.,460.,470.,480.,490.,500.,510.,520.,530.,540.,550.,560.,570.,580.,590.,600.};
+//int jt_nbins = 55;
+int jt_nbins = 41;
+//Double_t jt_bin_bounds[56] = {50., 60., 70., 80., 90., 100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280.,290.,300.,310.,320.,330.,340.,350.,360.,370.,380.,390.,400.,410.,420.,430.,440.,450.,460.,470.,480.,490.,500.,510.,520.,530.,540.,550.,560.,570.,580.,590.,600.};
+Double_t jt_bin_bounds[41] = {100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280.,290.,300.,310.,320.,330.,340.,350.,360.,370.,380.,390.,400.,410.,420.,430.,440.,450.,460.,470.,480.,490.,500.};
 //int jt_nbins = 10;
 //Double_t jt_bin_bounds[11] = {100., 110., 120., 130., 145., 160., 180., 220., 270., 350., 500.};
 
@@ -57,11 +60,9 @@ float CBins[5] = {0, 20, 60, 100, 200};
 
 double calo_jtpt, calo_refpt, calo_jteta, calo_jtphi, closure_nocorr, closure_ncs2, closure_gen_pol1, closure_reco_pol1, hiBin, vz, pthat_weight, corr_factor2, corr_calo_jtpt_2, corr_calo_jtpt_pol1, corr_calo_jtpt_reco_pol1;
 
-//cymbal tune
-double fcent(int hiBin){ 
-  TF1* fcent1= new TF1("fcent1","[0]+[1]*x+[2]*x^2+[3]*x^3+[4]*x^4+[7]*exp([5]+[6]*x)",0,180);  
-  fcent1->SetParameters(4.40810, -7.75301e-02, 4.91953e-04, -1.34961e-06, 1.44407e-09, -160, 1, 3.68078e-15); 
-  return (hiBin < 194) ? fcent1->Eval(hiBin) : 1;
+//cymbal tune centrality reweighting
+double fcent(int cent, TF1* fcent1){ 
+  return (cent < 194) ? fcent1->Eval(cent) : 1;
 }
 
 void jff_corr(){
@@ -69,6 +70,10 @@ void jff_corr(){
   nCScorr *corrpt = new nCScorr(is_pp);
 
 //// defining histos and profiles
+
+  TH1D *h_vz = new TH1D("h_vz", "",80,-20.,20.);
+  TH1D *h_cent_norw = new TH1D("h_cent_norw", "",40,0.,200.);
+  TH1D *h_cent_rw = new TH1D("h_cent_rw", "",40,0.,200.);
 
   TH1D *h_reco[nCBins][nptBins];
   TH1D *h_reco_full[nCBins];
@@ -122,6 +127,9 @@ void jff_corr(){
   TGraphErrors *gr_p0_param_2[nCBins];
 
   Double_t x_mean[nptBins], x_mean_err[nptBins], par0_2[nptBins], par1_2[nptBins], par0_err_2[nptBins], par1_err_2[nptBins];
+
+  TF1* f_cent= new TF1("f_cent","[0]+[1]*x+[2]*x^2+[3]*x^3+[4]*x^4+[7]*exp([5]+[6]*x)",0,180);  
+  f_cent->SetParameters(4.40810, -7.75301e-02, 4.91953e-04, -1.34961e-06, 1.44407e-09, -160, 1, 3.68078e-15);
 
   for (int ibin=0;ibin<nCBins;ibin++){
 
@@ -303,8 +311,10 @@ void jff_corr(){
   TFile *my_file;
 
   if(is_pp) my_file = TFile::Open("unzippedSkim_5TeV_ppMC.root"); 
+  //drum tune
   //else my_file = TFile::Open("/data/jetskims/HydJet145_1.root");
-  else my_file = TFile::Open("/data/jetskims/PbPbMC_HydjetPythia_CymbalTune_unzipSkim.root");
+  //cymbal tune
+  else my_file = TFile::Open("/data/jetskims/Pythia6HydjetCymbalTune_PbPbMC_unzipSkim_170718.root");  
   
   TTree *inp_tree = (TTree*)my_file->Get("unzipMixTree");
   mixing_tree_cymbal *my_primary = new mixing_tree_cymbal(inp_tree);
@@ -315,7 +325,7 @@ void jff_corr(){
   //// Loop over all reco jets ////
 
   for (int jet = 0; jet < n_jets; jet++){ 
-  //for (int jet = 0; jet < 200000; jet++){
+  //for (int jet = 0; jet < 20000; jet++){
 
     if (jet%1000000==0) cout<<jet<<endl;
 
@@ -336,28 +346,31 @@ void jff_corr(){
 
     int nCS_2 = my_primary->nCScandPt2_id145;
     //int nCS_2 = my_primary->nCScand;    
-/*    
+
     //// vz and weight
 
     vz = my_primary->vz;
     if (fabs(vz) > 15.) continue;
-    double weight_vz = f_vz->Eval(vz);
-*/
-    double weight_vz =1.;
+    
+    //drum tune
+    //double weight_vz = f_vz->Eval(vz);
+
+    //cymbal tune
+    double weight_vz = fWeight->Eval(vz);
 
     //// centrality bin and weight 
 
     hiBin = my_primary->hiBin;
     if(is_pp) hiBin = 1;
 
-    if (hiBin == 0 ) {continue; }
+    //if (hiBin == 0 ) {continue; }
     
     //drum tune             
     //double weight_cen = f_cen->Eval(hiBin);
     
     //cymbal tune
-    double weight_cen = fcent(hiBin);
-
+    double weight_cen = fcent(hiBin,f_cent);
+    
     if(is_pp) weight_cen = 1.;
 
     for (int cbin = 0; cbin < nCBins; cbin++){ 
@@ -403,6 +416,10 @@ void jff_corr(){
     closure_ncs2 = corr_calo_jtpt_2/calo_refpt;
 
     /////filling histos
+
+    h_vz->Fill(vz,pthat_weight*weight_cen*weight_vz);
+    h_cent_norw->Fill(hiBin,pthat_weight*weight_vz);
+    h_cent_rw->Fill(hiBin,pthat_weight*weight_cen*weight_vz);
 
     h_ncs_pt[mycbin][myptbin]->Fill(calo_jtpt,nCS_2,pthat_weight*weight_cen*weight_vz);
 
@@ -651,7 +668,7 @@ void jff_corr(){
                  
       double weight_cen = f_cen->Eval(hiBin);
 
-      if(is_pp) weight_cen = 1.;
+      /*if(is_pp)*/ weight_cen = 1.;
 
       for (int cbin = 0; cbin < nCBins; cbin++){ 
 
@@ -825,8 +842,12 @@ void jff_corr(){
   TFile *closure_histos;
 
   if(is_pp) closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/ppclosure_histos_Jun7_header.root", "RECREATE");
-  else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul18_cymbal_header_id145.root", "RECREATE");
+  else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul19_cymbal_header_id145_rebin.root", "RECREATE");
   closure_histos->cd();
+
+  h_vz->Write();
+  h_cent_rw->Write();
+  h_cent_norw->Write();
 
   for(int ibin=0;ibin<nCBins;ibin++){
     h_jt_closure_ref_nocorr[ibin]->Write();
