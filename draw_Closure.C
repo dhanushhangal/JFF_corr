@@ -20,7 +20,7 @@
 #include <TLatex.h>
 
 #define nCBins 4
-#define nptBins 55
+#define nptBins 40
 #define npfbins 21
 
 char saythis[500];
@@ -28,14 +28,15 @@ char saythis[500];
 using namespace std;
 
 TString cent[4] = {"0","1","2","3"};
-TString pt[56] = {"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55"};
+TString pt[41] = {"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40"};
 
-int jt_nbins = 55;
-Double_t jt_bin_bounds[56] = {50., 60., 70., 80., 90., 100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280.,290.,300.,310.,320.,330.,340.,350.,360.,370.,380.,390.,400.,410.,420.,430.,440.,450.,460.,470.,480.,490.,500.,510.,520.,530.,540.,550.,560.,570.,580.,590.,600.};
+int jt_nbins = 41;
+Double_t jt_bin_bounds[41] = {100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280.,290.,300.,310.,320.,330.,340.,350.,360.,370.,380.,390.,400.,410.,420.,430.,440.,450.,460.,470.,480.,490.,500.};
 
 void draw_Closure(){
 
-  TFile *closure_histos = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul6_header_id145.root");
+  //TFile *closure_histos = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul6_header_id145.root");
+  TFile *closure_histos = TFile::Open("/home/dhanush/Documents/JFF_corrections/closure_histos_Jul24_cymbal_header_id1_rebin.root");
 
 // defining histos
 
@@ -349,10 +350,10 @@ void draw_Closure(){
  
     h_ncs_2_dist[ibin][ibin3] = h_ncs_2[ibin][ibin3]->ProjectionX();
     h_ncs_2_dist_q[ibin][ibin3] = h_ncs_2_q[ibin][ibin3]->ProjectionX();
-    h_ncs_2_dist_q[ibin][ibin3] -> Scale (1./(h_ncs_2_dist[ibin][ibin3])->Integral());
+    h_ncs_2_dist_q[ibin][ibin3] -> Scale (1./(h_ncs_2_dist_q[ibin][ibin3])->Integral());
     h_ncs_2_dist_q[ibin][ibin3] -> SetLineColor (kBlue);
     h_ncs_2_dist_g[ibin][ibin3] = h_ncs_2_g[ibin][ibin3]->ProjectionX();
-    h_ncs_2_dist_g[ibin][ibin3] -> Scale (1./(h_ncs_2_dist[ibin][ibin3])->Integral());
+    h_ncs_2_dist_g[ibin][ibin3] -> Scale (1./(h_ncs_2_dist_g[ibin][ibin3])->Integral());
     h_ncs_2_dist_g[ibin][ibin3] -> SetLineColor (kRed);
     //h_ncs_2_closure[ibin][ibin3]->Fit(((TString)("f_ncs_2_cent"+cent[ibin]+"_pt"+pt[ibin3])),"Q R M");
 
@@ -809,7 +810,7 @@ void draw_Closure(){
       //l1[3-i][j]->Draw("same");
     }
   }
-
+/*
   TCanvas *c_ncs_450_500 = new TCanvas("c_ncs_450_500","",900,1200);
   gStyle->SetOptStat(0);
   gStyle->SetOptFit(1);
@@ -884,6 +885,8 @@ void draw_Closure(){
       //l1[3-i][j]->Draw("same");
     }
   }
+*/
+
 /*
   TCanvas *c_res_50_100 = new TCanvas("c_res_50_100","",900,1200);
   gStyle->SetOptStat(0);
@@ -2128,42 +2131,45 @@ void draw_Closure(){
 
   for(int i=0; i<4; i++){
     c_dist->cd(i+1);
-    h_ncs_2_dist_q[3-i][8]->GetYaxis()->SetRangeUser(0.,0.09);
-    h_ncs_2_dist_q[3-i][8]->GetXaxis()->SetRangeUser(0.,25.);
-    h_ncs_2_dist_q[3-i][8]->GetYaxis()->SetLabelSize(0.06);
-    h_ncs_2_dist_q[3-i][8]->GetXaxis()->SetLabelSize(0.07);
-    h_ncs_2_dist_q[3-i][8]->GetYaxis()->SetNdivisions(5);
-    h_ncs_2_dist_q[3-i][8]->SetTitle(centVars[3-i].c_str());
-    if(i==0) h_ncs_2_dist_q[3-i][8]->GetYaxis()->SetTitle("fraction of inclusive jets");
-    h_ncs_2_dist_q[3-i][8]->GetYaxis()->SetTitleSize(0.09);
-    h_ncs_2_dist_q[3-i][8]->GetYaxis()->SetTitleOffset(0.8);
-    h_ncs_2_dist_q[3-i][8]->GetYaxis()->CenterTitle();
-    h_ncs_2_dist_q[3-i][8]->GetXaxis()->SetTitle("nCS cand");
-    h_ncs_2_dist_q[3-i][8]->GetXaxis()->SetTitleSize(0.08);
-    h_ncs_2_dist_q[3-i][8]->GetXaxis()->SetTitleOffset(0.9);
-    h_ncs_2_dist_q[3-i][8]->GetXaxis()->CenterTitle();
-    h_ncs_2_dist_q[3-i][8]->Draw("same");
-    h_ncs_2_dist_g[3-i][8]->Draw("same");
+    h_ncs_2_dist_q[3-i][3]->GetYaxis()->SetRangeUser(0.,0.2);
+    h_ncs_2_dist_q[3-i][3]->GetXaxis()->SetRangeUser(0.,20.);
+    h_ncs_2_dist_q[3-i][3]->GetYaxis()->SetLabelSize(0.06);
+    h_ncs_2_dist_q[3-i][3]->GetXaxis()->SetLabelSize(0.07);
+    h_ncs_2_dist_q[3-i][3]->GetYaxis()->SetNdivisions(5);
+    h_ncs_2_dist_q[3-i][3]->SetTitle(centVars[3-i].c_str());
+    if(i==0) h_ncs_2_dist_q[3-i][3]->GetYaxis()->SetTitle("fraction of inclusive jets");
+    h_ncs_2_dist_q[3-i][3]->GetYaxis()->SetTitleSize(0.09);
+    h_ncs_2_dist_q[3-i][3]->GetYaxis()->SetTitleOffset(0.8);
+    h_ncs_2_dist_q[3-i][3]->GetYaxis()->CenterTitle();
+    h_ncs_2_dist_q[3-i][3]->GetXaxis()->SetTitle("nCS cand");
+    h_ncs_2_dist_q[3-i][3]->GetXaxis()->SetTitleSize(0.08);
+    h_ncs_2_dist_q[3-i][3]->GetXaxis()->SetTitleOffset(0.9);
+    h_ncs_2_dist_q[3-i][3]->GetXaxis()->CenterTitle();
+    h_ncs_2_dist_q[3-i][3]->Draw("same");
+    h_ncs_2_dist_g[3-i][3]->Draw("same");
     //l1[3-i][j+5] = new TLatex(130,1.3,centVars[3-i].c_str());
     //l1[3-i][j+5]->SetTextSize(0.08);
     //l1[3-i][j+5]->Draw("same");
     if(i==1){
       TLegend *legend = new TLegend(0.5,0.75,0.9,0.9);
       legend ->SetLineColor(kWhite);
-      legend ->AddEntry((TObject*)0, ptVars[8].c_str(), "");
+      legend->SetFillColor(0);
+      legend ->AddEntry((TObject*)0, "130 < p_{T} < 140", "");
       legend ->Draw("same");
     }
     if(i==2){
       TLegend *legend = new TLegend(0.5,0.75,0.9,0.9);
       legend ->SetLineColor(kWhite);
+      legend->SetFillColor(0);
       legend ->AddEntry((TObject*)0,"|#eta| < 1.6", "");
       legend ->Draw("same");
     }
     if(i==0){
       TLegend *leg0 = new TLegend(0.2,0.5,0.75,0.9);
       leg0->SetLineColor(kWhite);
-      leg0->AddEntry(h_ncs_2_dist_q[0][8],"q jets","lepf");
-      leg0->AddEntry(h_ncs_2_dist_g[0][8],"g jets","lepf");
+      leg0->SetFillColor(0);
+      leg0->AddEntry(h_ncs_2_dist_q[0][3],"q jets","lepf");
+      leg0->AddEntry(h_ncs_2_dist_g[0][3],"g jets","lepf");
       leg0->Draw();
     }
   }

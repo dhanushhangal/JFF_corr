@@ -23,6 +23,7 @@
 #include <vector>
 #include "TCanvas.h"
 #include "mixing_tree_new.h"
+#include "mixing_tree_cymbal.h"
 #include "nCScorr.h"
 
 const int nCBins = 4;
@@ -33,10 +34,11 @@ const int phi_nbins = 20;
 
 using namespace std;
 
+const bool is_cymbal = true;
 const bool ispp = false;
 const bool isdata = false;
 
-TString dataset_type_file_names[4] = {"PbPb_Data_skim.txt","pp_Data_skim.txt","PbPb_MC_skim.txt","pp_MC_skim.txt"};
+TString dataset_type_file_names[4] = {"PbPb_Data_skim.txt","pp_Data_skim.txt","PbPb_MC_skim_new.txt","pp_MC_skim.txt"};
 
 int mypbin, mycbin, myptbin, myrefptbin;
 
@@ -54,14 +56,19 @@ Double_t phi_bin_bounds[20] = {-1.50796, -1.256635, -1.00531,-0.879646, -.75398,
 
 float CBins[5] = {0, 20, 60, 100, 200};
 
-double vz, calo_jtpt, calo_corrpt, calo_refpt, calo_jteta, calo_jtphi, closure_nocorr, closure_corr, pt_size, hiBin, pthat_weight, refparton_flavor;
+double vz, calo_jtpt, calo_corrpt, calo_refpt, calo_jteta, calo_jtphi, closure_nocorr, closure_corr, pt_size, hiBin, pthat_weight;
 
 //Auxillary functions defined below
 void ReadFileList(std::vector<TString> &my_file_names, TString file_of_names, bool debug=false);
 
+//cymbal tune centrality reweighting
+double fcent(double centrality, TF1* fcent1){ 
+  return (centrality < 194) ? fcent1->Eval(centrality) : 1;
+}
+
 void test_corr(){
 
-  nCScorr *corrpt = new nCScorr(ispp);
+  nCScorr *corrpt = new nCScorr(ispp,is_cymbal);
 
 //// defining histos and profiles
 
@@ -253,9 +260,15 @@ void test_corr(){
 
   TF1 *f_cen = (TF1*)cen->Get("xfit_hi")->Clone("f_cen"); 
 
+  TF1* f_cent= new TF1("f_cent","[0]+[1]*x+[2]*x^2+[3]*x^3+[4]*x^4+[7]*exp([5]+[6]*x)",0,180);  
+  f_cent->SetParameters(4.40810, -7.75301e-02, 4.91953e-04, -1.34961e-06, 1.44407e-09, -160, 1, 3.68078e-15);
+
   ///////////////// vz reweighting ///////////////////////
 
   TF1 *f_vz = (TF1*)cen->Get("xfit_vz")->Clone("f_vz");
+
+  TF1 *fWeight = new TF1("fWeight","gaus(0)/(gaus(3))",-30.,30.);
+  fWeight->SetParameters(0.08,0.44,5.12,0.08,3.25,5.23);
 
   /////open files //////
   
@@ -282,7 +295,7 @@ void test_corr(){
 */
 
   TTree *inp_tree = (TTree*)my_file->Get("unzipMixTree");
-  mixing_tree_new *my_primary = new mixing_tree_new(inp_tree);
+  mixing_tree_cymbal *my_primary = new mixing_tree_cymbal(inp_tree);
   std::cout << "Successfully retrieved tree from input file!" << std::endl;
   Long64_t n_jets = my_primary->fChain->GetEntriesFast();
   total_n_jets += n_jets;
@@ -311,9 +324,9 @@ void test_corr(){
 
     int refparton_flavor = my_primary->refparton_flavor;
 
-    //int nCS_2 = my_primary->nCScandPt2_id145;
+    int nCS_2 = my_primary->nCScandPt2_id145;
     int nPF =0;
-    int nCS_2 = my_primary->nCScand;
+    //int nCS_2 = my_primary->nCScand;
     //int nCS_2 = my_primary->nCScandPt2;  
     //cout<<nCS_2<<endl;  
     
@@ -324,7 +337,8 @@ void test_corr(){
 
     if (hiBin == 0 ) {continue; }
                  
-    double weight_cen = f_cen->Eval(hiBin);
+    //double weight_cen = f_cen->Eval(hiBin);
+    double weight_cen = fcent(hiBin,f_cent);
 
     if(ispp || isdata) weight_cen = 1.;
 
@@ -332,7 +346,8 @@ void test_corr(){
 
     vz = my_primary->vz;
     if (fabs(vz) > 15.) continue;
-    double weight_vz = f_vz->Eval(vz);
+    //double weight_vz = f_vz->Eval(vz);
+    double weight_vz = fWeight->Eval(vz);
 
     if(isdata) weight_vz = 1.;
     if(ispp) weight_vz = 1.;  
@@ -440,7 +455,7 @@ void test_corr(){
   }
   else{
     if(ispp) closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/pptest_histos_MC_Jun30.root", "RECREATE");
-    else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/test_histos_MC_Jun30.root", "RECREATE");
+    else closure_histos = new TFile("/home/dhanush/Documents/JFF_corrections/test_histos_MC_Jul25.root", "RECREATE");
   }  
 
   closure_histos->cd();
